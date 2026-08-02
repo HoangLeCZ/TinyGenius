@@ -56,7 +56,7 @@ const TWEMOJI_MAP: Record<string, string> = {
   'astronaut': '1f9d1-200d-1f rocket', 'chef': '1f9d1-200d-1f373', 'artist': '1f9d1-200d-1f3a8', 'scientist': '1f9d1-200d-1f52c',
   'engineer': '1f9d1-200d-1f527', 'lawyer': '1f9d1-200d-1f legal', 'waiter': '1f9d1-200d-1f wait', 'builder': '1f9d1-200d-1f3d7',
   'smile': '1f smile', 'laugh': '1f laughing', 'cry': '1f crying', 'angry': '1f angry', 'think': '1f thinking',
-  'talk': '1f talking', 'walk': '1f walking', 'sit': '1f sitting', 'stand': '1f standing', 'wave': '1f waving',
+  'talk': '1f talking', 'walk': '1f walking', 'sit': '1f sitting', 'stand': '1f standing', 
 }
 
 const VOCAB_LIST = [

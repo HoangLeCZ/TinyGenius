@@ -1,6 +1,5 @@
 'use client'
 export const dynamic = 'force-dynamic'
-
 import { useSearchParams } from 'next/navigation'
 import GameEngine, { GameQuestion } from '@/components/core/GameEngine'
 import { Suspense } from 'react'
@@ -27,7 +26,8 @@ function VerbalGame() {
     },
   ]
 
-  const generateVerbalQuestion = (): GameQuestion<string> => {
+  // FIX: pridat async a Promise<>
+  const generateVerbalQuestion = async (): Promise<GameQuestion<string>> => {
     const t = templates[Math.floor(Math.random() * templates.length)]
     let a = Math.floor(Math.random() * 9) + 2
     let b = Math.floor(Math.random() * 9) + 2
@@ -41,8 +41,8 @@ function VerbalGame() {
       const wrong = answerNum + Math.floor(Math.random() * 5) - 2
       if(wrong >= 0 && wrong!== answerNum) wrongAnswers.add(String(wrong))
     }
-    const choices = [correctAnswer,...Array.from(wrongAnswers)]
-    .sort(() => Math.random() - 0.5)
+
+    const choices = [correctAnswer,...Array.from(wrongAnswers)].sort(() => Math.random() - 0.5)
 
     return {
       id: Date.now().toString() + Math.random(),
@@ -59,11 +59,11 @@ function VerbalGame() {
       total={10}
       theme="orange"
       backRoute="/"
-      generateQuestion={generateVerbalQuestion}
+      generateQuestion={generateVerbalQuestion} // uz bez erroru
       getAnswerText={(a) => String(a)}
       lang={lang}
       speakQuestion={true}
-      showSubtitle={false} // <- keep this
+      showSubtitle={false}
     />
   )
 }
