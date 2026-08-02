@@ -13,34 +13,43 @@ const MATH_GAMES = [
   { name: {en:'Verbal Math', vi:'Toán lời văn'}, emoji: '💬', route: '/game/verbal', color: 'bg-orange-300 border-orange-500' },
 ]
 
-const OTHER_GAMES = [
+const LANGUAGE_GAMES = [
   { name: {en:'Vocabulary', vi:'Từ vựng'}, emoji: '📚', route: '/game/vocab', color: 'bg-yellow-300 border-yellow-500' },
   { name: {en:'Reading', vi:'Đọc hiểu'}, emoji: '📖', route: '/game/reading', color: 'bg-pink-300 border-pink-500' },
+]
+
+const THINKING_GAMES = [ // NEW CATEGORY for reasoning
   { name: {en:'Reasoning', vi:'Tư duy'}, emoji: '🧠', route: '/game/reasoning', color: 'bg-indigo-300 border-indigo-500' },
+  { name: {en:'Find The Pattern', vi:'Tìm Quy Luật'}, emoji: '🔍', route: '/game/pattern', color: 'bg-indigo-300 border-indigo-500' }, // NEW
+]
+
+const WORLD_GAMES = [ // NEW CATEGORY for flags
+  { name: {en:'Guess The Flag', vi:'Đoán Lá Cờ'}, emoji: '🚩', route: '/game/flags', color: 'bg-red-300 border-red-500' }, // NEW
 ]
 
 export default function HomePage() {
   const router = useRouter()
   const [lang, setLang] = useState<Lang>('en')
-
+  
   useEffect(() => {
     setLang(localStorage.getItem('lang') as Lang || 'en')
   }, [])
-
+  
   const changeLang = (l: Lang) => {
-    setLang(l);
+    setLang(l); 
     localStorage.setItem('lang', l)
   }
 
   const GameGrid = ({games}:{games: typeof MATH_GAMES}) => (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-6xl mx-auto">
-      {games.map(g =>
-        <button
-          key={g.route}
-          onClick={() => router.push(`${g.route}?lang=${lang}`)}
-          className={`${g.color} border-4 rounded-3xl p-8 shadow-2xl hover:scale-110 transition`}>
-            <div className="text-7xl mb-4">{g.emoji}</div>
-            <div className="text-2xl font-extrabold text-black">{g.name[lang]}</div>
+      {games.map(g => 
+        <button 
+          key={g.route} 
+          onClick={() => router.push(`${g.route}?lang=${lang}`)} 
+          className={`${g.color} border-4 rounded-3xl p-8 shadow-2xl hover:scale-110 transition`}
+        >
+          <div className="text-7xl mb-4">{g.emoji}</div>
+          <div className="text-2xl font-extrabold text-black">{g.name[lang]}</div>
         </button>
       )}
     </div>
@@ -62,10 +71,22 @@ export default function HomePage() {
         <GameGrid games={MATH_GAMES} />
       </div>
 
-      {/* OTHER SECTION */}
-      <div>
-        <h2 className="text-center text-5xl font-extrabold text-black mb-8">✨ {lang==='en'?'Language & Thinking':'Ngôn ngữ & Tư duy'}</h2>
-        <GameGrid games={OTHER_GAMES} />
+      {/* LANGUAGE SECTION */}
+      <div className="mb-16">
+        <h2 className="text-center text-5xl font-extrabold text-black mb-8">✨ {lang==='en'?'Language':'Ngôn ngữ'}</h2>
+        <GameGrid games={LANGUAGE_GAMES} />
+      </div>
+
+      {/* THINKING SECTION - NEW */}
+      <div className="mb-16">
+        <h2 className="text-center text-5xl font-extrabold text-black mb-8">🧠 {lang==='en'?'Thinking':'Tư duy'}</h2>
+        <GameGrid games={THINKING_GAMES} />
+      </div>
+
+      {/* WORLD SECTION - NEW */}
+      <div className="mb-16">
+        <h2 className="text-center text-5xl font-extrabold text-black mb-8">🌍 {lang==='en'?'World':'Thế giới'}</h2>
+        <GameGrid games={WORLD_GAMES} />
       </div>
 
     </div>
