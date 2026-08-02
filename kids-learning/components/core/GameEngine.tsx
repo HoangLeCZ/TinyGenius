@@ -21,16 +21,16 @@ type GameEngineProps<T extends string | number> = {
   total: number,
   theme: 'green'|'blue'|'purple'|'orange',
   backRoute: string,
-  generateQuestion: () => GameQuestion<T>,
+  generateQuestion: () => Promise<GameQuestion<T>>, // async now
   getAnswerText: (a:T) => string,
   lang: 'en'|'vi',
   speakQuestion?: boolean,
-  showSubtitle?: boolean // <- NEW
+  showSubtitle?: boolean
 }
 
 export default function GameEngine<T extends string | number>({
   title, total, theme, backRoute, generateQuestion, getAnswerText, lang, speakQuestion,
-  showSubtitle = true // <- DEFAULT TRUE
+  showSubtitle = true
 }: GameEngineProps<T>){
 
   const themeBg = theme === 'green'? 'bg-green-100' : theme === 'blue'? 'bg-blue-100' : theme === 'purple'? 'bg-purple-100' : 'bg-orange-100'
@@ -43,6 +43,7 @@ export default function GameEngine<T extends string | number>({
   const [gameOver, setGameOver] = useState(false)
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [totalTime, setTotalTime] = useState<number>(0)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   const getStars = () => {
@@ -64,6 +65,12 @@ export default function GameEngine<T extends string | number>({
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
+  const getFontSize = (text: string) => {
+    if(text.length > 12) return 'text-2xl'
+    if(text.length > 8) return 'text-3xl'
+    return 'text-4xl'
+  }
+
   const getSubtitleFromItem = (item: GameQuestion<T> | null) => {
     if(!item) return {en:'', vi:''};
     if(speakQuestion && item.speakText) return item.speakText;
@@ -75,17 +82,20 @@ export default function GameEngine<T extends string | number>({
     return {en:'', vi:''};
   }
 
-  const nextQ = useCallback(() => {
+  const nextQ = useCallback(async () => {
+    setLoading(true)
     if(qNum > total) {
       setTotalTime((Date.now() - startTime) / 1000);
       setGameOver(true);
       setShowConfetti(true);
       speak(sounds.done[lang], muted, lang);
+      setLoading(false)
       return;
     }
-    const newQ = generateQuestion();
+    const newQ = await generateQuestion();
     setQ(newQ);
     setSelected(null);
+    setLoading(false)
     const subtitle = getSubtitleFromItem(newQ);
     setTimeout(() => speak(subtitle[lang], muted, lang), 200);
   }, [qNum, total, generateQuestion, muted, lang, startTime])
@@ -94,7 +104,7 @@ export default function GameEngine<T extends string | number>({
   useEffect(() => { if(qNum > 1) nextQ() }, [qNum])
 
   const handleAnswer = (choice: T) => {
-    if(selected !== null || gameOver) return;
+    if(selected!== null || gameOver || loading) return;
     setSelected(choice);
     const correct = choice === q!.answer;
     if(correct) {
@@ -133,29 +143,51 @@ export default function GameEngine<T extends string | number>({
     )
   }
 
+  if(loading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${baloo.className} ${themeBg}`}>
+        <p className="text-5xl font-bold text-black">Loading...</p>
+      </div>
+    )
+  }
+
   const subtitle = getSubtitleFromItem(q);
   return (
-    <div className={`min-h-screen p-8 ${baloo.className} ${themeBg}`}>
-      <div className="flex justify-between items-center mb-4 text-black text-2xl font-bold">
+    <div className={`min-h-screen p-4 md:p-8 ${baloo.className} ${themeBg}`}>
+      <div className="flex justify-between items-center mb-4 text-black text-xl md:text-2xl font-bold">
         <button onClick={() => router.push(backRoute)} className="bg-white px-4 py-2 rounded-xl border-2 border-black hover:scale-105">🏠 {lang==='en'?'Home':'Trang chủ'}</button>
         <span>{title[lang]}: {qNum}/{total}</span>
         <button onClick={() => setMuted(!muted)}>{muted? '🔇' : '🔊'}</button>
       </div>
 
       {showSubtitle && subtitle[lang] && (
-        <h2 className="text-center text-4xl font-bold text-black mb-8 px-4">{subtitle[lang]}</h2>
+        <h2 className="text-center text-2xl md:text-4xl font-bold text-black mb-8 px-4">{subtitle[lang]}</h2>
       )}
 
       {q?.questionUI}
-      <div className="grid grid-cols-2 gap-6 max-w-md mx-auto mt-8">
+
+      {/* FIXED CHOICE BUTTONS - NO OVERFLOW */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto mt-8">
         {q?.choices.map(choice => {
           const isCorrect = choice === q.answer;
           const isSelected = choice === selected;
           let bg = 'bg-white border-black';
           if(isSelected) bg = isCorrect? 'bg-green-400 border-green-700' : 'bg-red-400 border-red-700';
+          const text = getAnswerText(choice)
+          
           return (
-            <button key={getAnswerText(choice)} onClick={() => handleAnswer(choice)} disabled={selected !== null} className={`${bg} border-4 text-5xl font-extrabold text-black rounded-2xl p-8 hover:scale-105 disabled:opacity-70`}>
-              {getAnswerText(choice)}
+            <button 
+              key={text} 
+              onClick={() => handleAnswer(choice)} 
+              disabled={selected!== null} 
+              className={`
+                ${bg} border-4 text-black rounded-2xl p-6 hover:scale-105 disabled:opacity-70
+                flex items-center justify-center min-h-[110px] md:min-h-[130px]
+                ${getFontSize(text)} font-extrabold
+                break-words whitespace-normal text-center leading-tight
+              `}
+            >
+              <span>{text}</span>
             </button>
           )
         })}
