@@ -1,41 +1,41 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Confetti from '../ui/Confetti'
-import { sounds } from '@/lib/sounds' // only keep sound effects
+import { sounds } from '@/lib/sounds' // only for SFX now
 import { Baloo_2 } from 'next/font/google'
 
 const baloo = Baloo_2({ subsets: ['latin'], weight: ['800'] })
 
-export type GameQuestion<T> = {
+export type WorldQuestion<T> = {
   id: string
   questionUI: React.ReactNode
   answer: T
   choices: T[]
-  itemName?: {en:string, vi:string}
+  fact?: {en:string, vi:string}
   speakText?: {en:string, vi:string}
 }
 
-type GameEngineProps<T extends string | number> = {
+type WorldEngineProps<T extends string | number> = {
   title: {en:string, vi:string}
   total: number
-  theme: 'green'|'blue'|'purple'|'orange'
+  theme: 'green'|'blue'|'purple'|'orange'|'red'
   backRoute: string
-  generateQuestion: () => Promise<GameQuestion<T>>
+  generateQuestion: () => Promise<WorldQuestion<T>>
   getAnswerText: (a:T) => string
   lang: 'en'|'vi'
   speakQuestion?: boolean
-  showSubtitle?: boolean
+  showFact?: boolean
 }
 
-export default function GameEngine<T extends string | number>({
+export default function WorldEngine<T extends string | number>({
   title, total, theme, backRoute, generateQuestion, getAnswerText, lang,
-  speakQuestion, showSubtitle = true
-}: GameEngineProps<T>){
+  speakQuestion = true, showFact = true
+}: WorldEngineProps<T>){
 
-  const themeBg = theme === 'green'? 'bg-green-100' : theme === 'blue'? 'bg-blue-100' : theme === 'purple'? 'bg-purple-100' : 'bg-orange-100'
+  const themeBg = theme === 'green'? 'bg-green-100' : theme === 'blue'? 'bg-blue-100' : theme === 'purple'? 'bg-purple-100' : theme === 'red'? 'bg-red-100' : 'bg-orange-100'
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]) // NEW
-  const [q, setQ] = useState<GameQuestion<T> | null>(null)
+  const [q, setQ] = useState<WorldQuestion<T> | null>(null)
   const [score, setScore] = useState(0)
   const [qNum, setQNum] = useState(1)
   const [muted, setMuted] = useState(false)
@@ -54,10 +54,10 @@ export default function GameEngine<T extends string | number>({
     window.speechSynthesis.onvoiceschanged = loadVoices
   }, [])
 
-  // NEW: Smart speak function inside engine
+  // NEW: Smart speak function
   const speakText = useCallback((text: string, ttsLang: 'en'|'vi') => {
-    if (muted ||!('speechSynthesis' in window)) return
-    window.speechSynthesis.cancel() // stop previous
+    if (muted ||!text ||!('speechSynthesis' in window)) return
+    window.speechSynthesis.cancel()
 
     const utterance = new SpeechSynthesisUtterance(text)
 
@@ -79,7 +79,6 @@ export default function GameEngine<T extends string | number>({
     window.speechSynthesis.speak(utterance)
   }, [voices, muted])
 
-  // Play sound effects - still use your lib
   const playSound = useCallback((type: 'correct'|'wrong'|'done') => {
     if (muted) return
     const audio = new Audio(sounds[type][lang])
@@ -111,25 +110,14 @@ export default function GameEngine<T extends string | number>({
     return 'text-4xl'
   }
 
-  const getSubtitleFromItem = (item: GameQuestion<T> | null) => {
-    if(!item) return {en:'', vi:''}
-    if(speakQuestion && item.speakText) return item.speakText
-    if(item.itemName) {
-      const answerNum = typeof item.answer === 'number'? item.answer : parseInt(String(item.answer))
-      const plural = answerNum > 1? 's' : ''
-      return { en: `How many ${item.itemName.en}${plural}?`, vi: `Có bao nhiêu ${item.itemName.vi}?` }
-    }
-    return {en:'', vi:''}
-  }
-
   const nextQ = useCallback(async () => {
     setLoading(true)
     if(qNum > total) {
       setTotalTime((Date.now() - startTime) / 1000)
       setGameOver(true)
       setShowConfetti(true)
-      playSound('done') // use sound effect
-      speakText(lang==='en'?'Finished!':'Hoàn thành rồi!', lang) // use smart TTS
+      playSound('done')
+      speakText(lang==='en'?'You did it!':'Chúc mừng con!', lang) // Natural VI
       setLoading(false)
       return
     }
@@ -137,9 +125,10 @@ export default function GameEngine<T extends string | number>({
     setQ(newQ)
     setSelected(null)
     setLoading(false)
-    const subtitle = getSubtitleFromItem(newQ)
-    setTimeout(() => speakText(subtitle[lang], lang), 300) // use smart TTS
-  }, [qNum, total, generateQuestion, lang, startTime, speakText, playSound])
+    if(speakQuestion) {
+      setTimeout(() => speakText(newQ.speakText?.[lang] || '', lang), 300)
+    }
+  }, [qNum, total, generateQuestion, muted, lang, startTime, speakText, speakQuestion, playSound])
 
   useEffect(() => { nextQ() }, [])
   useEffect(() => { if(qNum > 1) nextQ() }, [qNum])
@@ -151,12 +140,14 @@ export default function GameEngine<T extends string | number>({
     if(correct) {
       setScore(s => s + 1)
       playSound('correct')
-      speakText(lang==='en'?'Correct!':'Đúng rồi!', lang)
+      speakText(lang==='en'?'Correct!':'Giỏi lắm!', lang) // Natural VI
     } else {
       playSound('wrong')
-      speakText(lang==='en'?'Try again':'Sai rồi', lang)
+      speakText(lang==='en'?'Oops':'Chưa đúng rồi', lang) // Natural VI
     }
-    setTimeout(() => { setQNum(n => n + 1) }, 1200)
+    setTimeout(() => {
+      setQNum(n => n + 1)
+    }, 1500) // 1.5s to read fact
   }
 
   const restartGame = () => {
@@ -195,7 +186,6 @@ export default function GameEngine<T extends string | number>({
     )
   }
 
-  const subtitle = getSubtitleFromItem(q)
   return (
     <div className={`min-h-screen p-4 md:p-8 ${baloo.className} ${themeBg}`}>
       <div className="flex justify-between items-center mb-4 text-black text-xl md:text-2xl font-bold">
@@ -204,11 +194,14 @@ export default function GameEngine<T extends string | number>({
         <button onClick={() => setMuted(!muted)}>{muted? '🔇' : '🔊'}</button>
       </div>
 
-      {showSubtitle && subtitle[lang] && (
-        <h2 className="text-center text-2xl md:text-4xl font-bold text-black mb-8 px-4">{subtitle[lang]}</h2>
-      )}
-
       {q?.questionUI}
+
+      {/* FACT BOX */}
+      {showFact && q?.fact && (
+        <h2 className="text-center text-2xl md:text-4xl font-bold text-black mb-8 px-4 bg-yellow-200 border-4 border-yellow-500 rounded-2xl py-4">
+          💡 {q.fact[lang]}
+        </h2>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto mt-8">
         {q?.choices.map(choice => {

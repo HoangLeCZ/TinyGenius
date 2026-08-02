@@ -23,8 +23,9 @@ const THINKING_GAMES = [ // NEW CATEGORY for reasoning
   { name: {en:'Find The Pattern', vi:'Tìm Quy Luật'}, emoji: '🔍', route: '/game/pattern', color: 'bg-indigo-300 border-indigo-500' }, // NEW
 ]
 
-const WORLD_GAMES = [ // NEW CATEGORY for flags
-  { name: {en:'Guess The Flag', vi:'Đoán Lá Cờ'}, emoji: '🚩', route: '/game/flags', color: 'bg-red-300 border-red-500' }, // NEW
+const WORLD_GAMES = [
+  { name: {en:'Guess The Flag', vi:'Đoán Lá Cờ'}, emoji: '🚩', route: '/game/flags', color: 'bg-orange-300 border-orange-500' },
+  { name: {en:'World Capitals', vi:'Thủ Đô Thế Giới'}, emoji: '🏛️', route: '/game/capital', color: 'bg-blue-300 border-blue-500' }, // NEW
 ]
 
 export default function HomePage() {
