@@ -78,6 +78,7 @@ export default function GameEngine<T extends string | number>({
     return {en:'', vi:''};
   }
 
+  // FIXED: NO INFINITE LOOP
   const nextQ = useCallback(() => {
     if(qNum > total) { 
       setTotalTime((Date.now() - startTime) / 1000); 
@@ -91,10 +92,18 @@ export default function GameEngine<T extends string | number>({
     setSelected(null); 
     const subtitle = getSubtitleFromItem(newQ);
     setTimeout(() => speak(subtitle[lang], muted, lang), 200);
-  }, [qNum, total, generateQuestion, muted, lang, speakQuestion, startTime])
+  }, [qNum, total, generateQuestion, muted, lang, startTime])
 
-  // AUTO START
-  useEffect(() => { nextQ() }, []) 
+  // 1. RUN ONCE TO START GAME
+  useEffect(() => { 
+    nextQ() 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) 
+
+  // 2. RUN WHEN qNum INCREASES TO LOAD NEXT Q
+  useEffect(() => { 
+    if(qNum > 1) nextQ() 
+  }, [qNum])
 
   const handleAnswer = (choice: T) => {
     if(selected !== null || gameOver) return;
@@ -107,6 +116,7 @@ export default function GameEngine<T extends string | number>({
     else { 
       speak(sounds.wrong[lang], muted, lang); 
     }
+    // Wait 1 sec then go to next question
     setTimeout(() => { setQNum(n => n + 1); }, 1000);
   }
 
@@ -119,7 +129,7 @@ export default function GameEngine<T extends string | number>({
     setShowConfetti(false);
   }
 
-  // GAME OVER
+  // GAME OVER SCREEN
   if(gameOver) {
     const stars = getStars();
     return (
