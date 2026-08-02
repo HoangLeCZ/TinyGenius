@@ -11,7 +11,7 @@ export type GameQuestion<T> = {
   itemName?: {en:string, vi:string}, speakText?: {en:string, vi:string}
 }
 
-export default function GameEngine<T>({ title, total, theme, backRoute, generateQuestion, getAnswerText, lang, speakQuestion }:{
+export default function GameEngine<T extends number | string>({ title, total, theme, backRoute, generateQuestion, getAnswerText, lang, speakQuestion }:{
   title: {en:string, vi:string}, total: number, theme: 'green'|'blue'|'purple'|'orange', backRoute: string,
   generateQuestion: () => GameQuestion<T>, getAnswerText: (a:T) => string, lang: 'en'|'vi', speakQuestion?: boolean
 }){
@@ -24,7 +24,7 @@ export default function GameEngine<T>({ title, total, theme, backRoute, generate
   const [selected, setSelected] = useState<T | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [gameOver, setGameOver] = useState(false)
-  const [startTime, setStartTime] = useState<number>(Date.now()) // START IMMEDIATELY
+  const [startTime, setStartTime] = useState<number>(Date.now())
   const [totalTime, setTotalTime] = useState<number>(0)
 
   const router = useRouter()
@@ -47,7 +47,7 @@ export default function GameEngine<T>({ title, total, theme, backRoute, generate
     if(!item) return {en:'', vi:''};
     if(speakQuestion && item.speakText) return item.speakText;
     if(item.itemName) {
-      const plural = item.answer > 1? 's' : '';
+      const plural = Number(item.answer) > 1 ? 's' : ''; // FIX HERE
       return { en: `How many ${item.itemName.en}${plural}?`, vi: `Có bao nhiêu ${item.itemName.vi}?` }
     }
     return {en:'', vi:''};
@@ -64,7 +64,6 @@ export default function GameEngine<T>({ title, total, theme, backRoute, generate
     setTimeout(() => speak(subtitle[lang], muted, lang), 200);
   }, [qNum, total, generateQuestion, muted, lang, speakQuestion, startTime])
 
-  // AUTO START ON MOUNT
   useEffect(() => { nextQ() }, []) 
 
   const handleAnswer = (choice: T) => {
@@ -81,7 +80,6 @@ export default function GameEngine<T>({ title, total, theme, backRoute, generate
     setTotalTime(0); setScore(0); setQNum(1); setGameOver(false); setShowConfetti(false);
   }
 
-  // GAME OVER SCREEN
   if(gameOver) {
     const stars = getStars();
     return (
@@ -100,7 +98,6 @@ export default function GameEngine<T>({ title, total, theme, backRoute, generate
     )
   }
 
-  // GAME SCREEN - NO START SCREEN
   const subtitle = getSubtitleFromItem(q);
   return (
     <div className={`min-h-screen p-8 ${baloo.className} ${themeBg}`}>
