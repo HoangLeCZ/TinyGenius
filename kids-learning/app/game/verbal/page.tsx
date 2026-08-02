@@ -1,5 +1,5 @@
 'use client'
-export const dynamic = 'force-dynamic' // <- STOPS PRERENDER CRASH
+export const dynamic = 'force-dynamic'
 
 import { useSearchParams } from 'next/navigation'
 import GameEngine, { GameQuestion } from '@/components/core/GameEngine'
@@ -9,34 +9,47 @@ function VerbalGame() {
   const searchParams = useSearchParams()
   const lang = (searchParams.get('lang') as 'en' | 'vi') || 'en'
 
+  const templates = [
+    {
+      en: (a: number, b: number) => `Sara has ${a} apples. She buys ${b} more. How many apples does she have in total?`,
+      vi: (a: number, b: number) => `Sara có ${a} quả táo. Cô ấy mua thêm ${b} quả nữa. Hỏi Sara có tất cả bao nhiêu quả táo?`,
+      calc: (a: number, b: number) => a + b
+    },
+    {
+      en: (a: number, b: number) => `There were ${a} birds on a tree. ${b} birds flew away. How many are left?`,
+      vi: (a: number, b: number) => `Có ${a} con chim trên cây. ${b} con bay đi. Hỏi còn lại bao nhiêu con?`,
+      calc: (a: number, b: number) => a - b
+    },
+    {
+      en: (a: number, b: number) => `Each box has ${a} pencils. There are ${b} boxes. How many pencils in total?`,
+      vi: (a: number, b: number) => `Mỗi hộp có ${a} cây bút chì. Có ${b} hộp. Hỏi có tất cả bao nhiêu cây bút chì?`,
+      calc: (a: number, b: number) => a * b
+    },
+  ]
+
   const generateVerbalQuestion = (): GameQuestion<string> => {
-    const operations: { 
-      symbol: string, 
-      fn: (a:number, b:number) => number, 
-      text: { en: (a:number, b:number) => string, vi: (a:number, b:number) => string } 
-    }[] = [
-      { symbol: '+', fn: (a,b) => a + b, text: { en: (a,b) => `What is ${a} plus ${b}?`, vi: (a,b) => `${a} cộng ${b} bằng bao nhiêu?`} },
-      { symbol: '-', fn: (a,b) => a - b, text: { en: (a,b) => `What is ${a} minus ${b}?`, vi: (a,b) => `${a} trừ ${b} bằng bao nhiêu?`} },
-      { symbol: '×', fn: (a,b) => a * b, text: { en: (a,b) => `What is ${a} times ${b}?`, vi: (a,b) => `${a} nhân ${b} bằng bao nhiêu?`} },
-    ]
-    
-    const op = operations[Math.floor(Math.random() * operations.length)]
-    let a = Math.floor(Math.random() * 10) + 1
-    let b = Math.floor(Math.random() * 10) + 1
-    if(op.symbol === '-' && a < b) [a, b] = [b, a]
-    
-    const answerNum = op.fn(a,b)
+    const t = templates[Math.floor(Math.random() * templates.length)]
+    let a = Math.floor(Math.random() * 9) + 2
+    let b = Math.floor(Math.random() * 9) + 2
+    if (t.calc === templates[1].calc && a < b) [a, b] = [b, a]
+
+    const answerNum = t.calc(a, b)
     const correctAnswer = String(answerNum)
-    const choices = [correctAnswer, String(answerNum + 1), String(Math.max(0, answerNum - 1)), String(answerNum + 2)]
-      .filter((v, i, arr) => arr.indexOf(v) === i)
-      .sort(() => Math.random() - 0.5)
+
+    const wrongAnswers = new Set<string>()
+    while(wrongAnswers.size < 3){
+      const wrong = answerNum + Math.floor(Math.random() * 5) - 2
+      if(wrong >= 0 && wrong!== answerNum) wrongAnswers.add(String(wrong))
+    }
+    const choices = [correctAnswer,...Array.from(wrongAnswers)]
+    .sort(() => Math.random() - 0.5)
 
     return {
-      id: crypto.randomUUID(),
-      questionUI: <div className="text-center text-7xl font-extrabold text-black">{a} {op.symbol} {b} = ?</div>,
+      id: Date.now().toString() + Math.random(),
+      questionUI: <div className="text-center text-2xl font-bold text-black px-4 leading-relaxed max-w-2xl mx-auto">{lang === 'en'? t.en(a,b) : t.vi(a,b)}</div>,
       answer: correctAnswer,
       choices: choices,
-      speakText: { en: op.text.en(a,b), vi: op.text.vi(a,b) }
+      speakText: { en: t.en(a,b), vi: t.vi(a,b) }
     }
   }
 
@@ -50,13 +63,14 @@ function VerbalGame() {
       getAnswerText={(a) => String(a)}
       lang={lang}
       speakQuestion={true}
+      showSubtitle={false} // <- keep this
     />
   )
 }
 
 export default function VerbalPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-orange-100" />}>
+    <Suspense fallback={<div className="min-h-screen bg-orange-100 flex items-center justify-center">Loading...</div>}>
       <VerbalGame />
     </Suspense>
   )
