@@ -7,13 +7,32 @@ import { Baloo_2 } from 'next/font/google'
 const baloo = Baloo_2({ subsets: ['latin'], weight: ['800'] })
 
 export type GameQuestion<T> = {
-  id: string; questionUI: React.ReactNode; answer: T; choices: T[];
-  itemName?: {en:string, vi:string}, speakText?: {en:string, vi:string}
+  id: string; 
+  questionUI: React.ReactNode; 
+  answer: T; 
+  choices: T[];
+  itemName?: {en:string, vi:string}, 
+  speakText?: {en:string, vi:string}
 }
 
-export default function GameEngine<T extends number | string>({ title, total, theme, backRoute, generateQuestion, getAnswerText, lang, speakQuestion }:{
-  title: {en:string, vi:string}, total: number, theme: 'green'|'blue'|'purple'|'orange', backRoute: string,
-  generateQuestion: () => GameQuestion<T>, getAnswerText: (a:T) => string, lang: 'en'|'vi', speakQuestion?: boolean
+export default function GameEngine<T extends string | number>({ 
+  title, 
+  total, 
+  theme, 
+  backRoute, 
+  generateQuestion, 
+  getAnswerText, 
+  lang, 
+  speakQuestion 
+}:{
+  title: {en:string, vi:string}, 
+  total: number, 
+  theme: 'green'|'blue'|'purple'|'orange', 
+  backRoute: string,
+  generateQuestion: () => GameQuestion<T>, 
+  getAnswerText: (a:T) => string, 
+  lang: 'en'|'vi', 
+  speakQuestion?: boolean
 }){
   const themeBg = theme === 'green'? 'bg-green-100' : theme === 'blue'? 'bg-blue-100' : theme === 'purple'? 'bg-purple-100' : 'bg-orange-100'
   
@@ -34,12 +53,17 @@ export default function GameEngine<T extends number | string>({ title, total, th
     const avgTime = totalTime / total;
     const timeBonus = Math.max(0, 1 - (avgTime / 60));
     const finalScore = scorePercent * 0.7 + timeBonus * 0.3;
-    if(finalScore >= 0.9) return 5; if(finalScore >= 0.7) return 4; if(finalScore >= 0.5) return 3;
-    if(finalScore >= 0.3) return 2; if(finalScore >= 0.1) return 1; return 0;
+    if(finalScore >= 0.9) return 5; 
+    if(finalScore >= 0.7) return 4; 
+    if(finalScore >= 0.5) return 3;
+    if(finalScore >= 0.3) return 2; 
+    if(finalScore >= 0.1) return 1; 
+    return 0;
   }
 
   const formatTime = (sec: number) => {
-    const m = Math.floor(sec / 60); const s = Math.floor(sec % 60);
+    const m = Math.floor(sec / 60); 
+    const s = Math.floor(sec % 60);
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
@@ -47,7 +71,8 @@ export default function GameEngine<T extends number | string>({ title, total, th
     if(!item) return {en:'', vi:''};
     if(speakQuestion && item.speakText) return item.speakText;
     if(item.itemName) {
-      const plural = Number(item.answer) > 1 ? 's' : ''; // FIX HERE
+      const answerNum = typeof item.answer === 'number' ? item.answer : parseInt(String(item.answer))
+      const plural = answerNum > 1 ? 's' : '';
       return { en: `How many ${item.itemName.en}${plural}?`, vi: `Có bao nhiêu ${item.itemName.vi}?` }
     }
     return {en:'', vi:''};
@@ -55,35 +80,50 @@ export default function GameEngine<T extends number | string>({ title, total, th
 
   const nextQ = useCallback(() => {
     if(qNum > total) { 
-      setTotalTime((Date.now() - startTime) / 1000); setGameOver(true); setShowConfetti(true);
-      speak(sounds.done[lang], muted, lang); return; 
+      setTotalTime((Date.now() - startTime) / 1000); 
+      setGameOver(true); 
+      setShowConfetti(true);
+      speak(sounds.done[lang], muted, lang); 
+      return; 
     }
     const newQ = generateQuestion();
-    setQ(newQ); setSelected(null); 
+    setQ(newQ); 
+    setSelected(null); 
     const subtitle = getSubtitleFromItem(newQ);
     setTimeout(() => speak(subtitle[lang], muted, lang), 200);
   }, [qNum, total, generateQuestion, muted, lang, speakQuestion, startTime])
 
+  // AUTO START
   useEffect(() => { nextQ() }, []) 
 
   const handleAnswer = (choice: T) => {
     if(selected !== null || gameOver) return;
     setSelected(choice);
     const correct = choice === q!.answer;
-    if(correct) { setScore(s => s + 1); speak(sounds.correct[lang], muted, lang); }
-    else { speak(sounds.wrong[lang], muted, lang); }
+    if(correct) { 
+      setScore(s => s + 1); 
+      speak(sounds.correct[lang], muted, lang); 
+    }
+    else { 
+      speak(sounds.wrong[lang], muted, lang); 
+    }
     setTimeout(() => { setQNum(n => n + 1); }, 1000);
   }
 
   const restartGame = () => {
     setStartTime(Date.now());
-    setTotalTime(0); setScore(0); setQNum(1); setGameOver(false); setShowConfetti(false);
+    setTotalTime(0); 
+    setScore(0); 
+    setQNum(1); 
+    setGameOver(false); 
+    setShowConfetti(false);
   }
 
+  // GAME OVER
   if(gameOver) {
     const stars = getStars();
     return (
-      <div className={`min-h-screen flex-col items-center justify-center ${baloo.className} ${themeBg} p-8`}>
+      <div className={`min-h-screen flex flex-col items-center justify-center ${baloo.className} ${themeBg} p-8`}>
         {showConfetti && <Confetti />}
         <h1 className="text-7xl font-extrabold text-black mb-4">{lang==='en'?'Finished!':'Hoàn thành!'}</h1>
         <div className="text-8xl mb-4">{'⭐'.repeat(stars)}{'☆'.repeat(5 - stars)}</div>
@@ -98,6 +138,7 @@ export default function GameEngine<T extends number | string>({ title, total, th
     )
   }
 
+  // GAME SCREEN
   const subtitle = getSubtitleFromItem(q);
   return (
     <div className={`min-h-screen p-8 ${baloo.className} ${themeBg}`}>
@@ -110,8 +151,10 @@ export default function GameEngine<T extends number | string>({ title, total, th
       {q?.questionUI}
       <div className="grid grid-cols-2 gap-6 max-w-md mx-auto">
         {q?.choices.map(choice => {
-          const isCorrect = choice === q.answer; const isSelected = choice === selected;
-          let bg = 'bg-white border-black'; if(isSelected) bg = isCorrect? 'bg-green-400 border-green-700' : 'bg-red-400 border-red-700';
+          const isCorrect = choice === q.answer; 
+          const isSelected = choice === selected;
+          let bg = 'bg-white border-black'; 
+          if(isSelected) bg = isCorrect? 'bg-green-400 border-green-700' : 'bg-red-400 border-red-700';
           return (
             <button key={getAnswerText(choice)} onClick={() => handleAnswer(choice)} disabled={selected !== null}
               className={`${bg} border-4 text-5xl font-extrabold text-black rounded-2xl p-8 hover:scale-105 disabled:opacity-70`}>
