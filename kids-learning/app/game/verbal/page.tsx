@@ -1,16 +1,19 @@
 'use client'
+export const dynamic = 'force-dynamic' // <- STOPS PRERENDER CRASH
+
 import { useSearchParams } from 'next/navigation'
 import GameEngine, { GameQuestion } from '@/components/core/GameEngine'
+import { Suspense } from 'react'
 
-export default function VerbalPage() {
+function VerbalGame() {
   const searchParams = useSearchParams()
   const lang = (searchParams.get('lang') as 'en' | 'vi') || 'en'
 
   const generateVerbalQuestion = (): GameQuestion<string> => {
-    const operations: {
-      symbol: string,
-      fn: (a:number, b:number) => number,
-      text: { en: (a:number, b:number) => string, vi: (a:number, b:number) => string }
+    const operations: { 
+      symbol: string, 
+      fn: (a:number, b:number) => number, 
+      text: { en: (a:number, b:number) => string, vi: (a:number, b:number) => string } 
     }[] = [
       { symbol: '+', fn: (a,b) => a + b, text: { en: (a,b) => `What is ${a} plus ${b}?`, vi: (a,b) => `${a} cộng ${b} bằng bao nhiêu?`} },
       { symbol: '-', fn: (a,b) => a - b, text: { en: (a,b) => `What is ${a} minus ${b}?`, vi: (a,b) => `${a} trừ ${b} bằng bao nhiêu?`} },
@@ -20,13 +23,11 @@ export default function VerbalPage() {
     const op = operations[Math.floor(Math.random() * operations.length)]
     let a = Math.floor(Math.random() * 10) + 1
     let b = Math.floor(Math.random() * 10) + 1
-    
     if(op.symbol === '-' && a < b) [a, b] = [b, a]
-
+    
     const answerNum = op.fn(a,b)
     const correctAnswer = String(answerNum)
-    
-    const choices = [correctAnswer, String(answerNum + 1), String(answerNum - 1), String(answerNum + 2)]
+    const choices = [correctAnswer, String(answerNum + 1), String(Math.max(0, answerNum - 1)), String(answerNum + 2)]
       .filter((v, i, arr) => arr.indexOf(v) === i)
       .sort(() => Math.random() - 0.5)
 
@@ -50,5 +51,13 @@ export default function VerbalPage() {
       lang={lang}
       speakQuestion={true}
     />
+  )
+}
+
+export default function VerbalPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-orange-100" />}>
+      <VerbalGame />
+    </Suspense>
   )
 }

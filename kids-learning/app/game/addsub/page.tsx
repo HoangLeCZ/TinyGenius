@@ -1,8 +1,11 @@
 'use client'
+export const dynamic = 'force-dynamic' // <- ADD THIS LINE. STOPS PRERENDER
+
 import GameEngine, { GameQuestion } from '@/components/core/GameEngine'
 import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
-export default function AddSubPage(){
+function AddSubGame() {
   const searchParams = useSearchParams()
   const lang = (searchParams.get('lang') as 'en'|'vi') || 'en'
 
@@ -11,7 +14,7 @@ export default function AddSubPage(){
     let a = Math.floor(Math.random() * 10) + 1
     let b = Math.floor(Math.random() * 10) + 1
     
-    if(!isAdd && a < b) [a, b] = [b, a] // prevent negatives
+    if(!isAdd && a < b) [a, b] = [b, a]
 
     const answer = isAdd ? a + b : a - b
     const symbol = isAdd ? '+' : '-'
@@ -39,5 +42,14 @@ export default function AddSubPage(){
       lang={lang}
       speakQuestion={true}
     />
+  )
+}
+
+// WRAP IN SUSPENSE BECAUSE useSearchParams REQUIRES IT
+export default function AddSubPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-green-100" />}>
+      <AddSubGame />
+    </Suspense>
   )
 }

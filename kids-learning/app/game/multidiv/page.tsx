@@ -1,12 +1,15 @@
-'use client' 
-import GameEngine, { GameQuestion } from '@/components/core/GameEngine' 
-import { useSearchParams } from 'next/navigation' 
+'use client'
+export const dynamic = 'force-dynamic' // STOPS PRERENDER CRASH
 
-export default function MultiDivPage(){ 
+import GameEngine, { GameQuestion } from '@/components/core/GameEngine'
+import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
+
+function MultiDivGame(){
   const searchParams = useSearchParams()
-  const lang = (searchParams.get('lang') as 'en'|'vi') || 'en' 
+  const lang = (searchParams.get('lang') as 'en'|'vi') || 'en'
 
-  const generateMultiDivQuestion = (): GameQuestion<number> => { // 1. MUST RETURN ID
+  const generateMultiDivQuestion = (): GameQuestion<number> => {
     const isMultiply = Math.random() > 0.5
     let a = Math.floor(Math.random() * 10) + 1
     let b = Math.floor(Math.random() * 10) + 1
@@ -17,27 +20,35 @@ export default function MultiDivPage(){
     const symbol = isMultiply ? '×' : '÷'
 
     return {
-      id: crypto.randomUUID(), // 2. ADD THIS - GameEngine requires it
+      id: crypto.randomUUID(),
       questionUI: <div className="text-center text-7xl font-extrabold text-black">{a} {symbol} {b} = ?</div>,
       answer: answer,
-      choices: [answer, answer+1, answer-1, answer+2].filter(n => n > 0).sort(() => Math.random() - 0.5),
+      choices: [answer, answer+1, Math.max(1, answer-1), answer+2].filter((v, i, arr) => arr.indexOf(v) === i).sort(() => Math.random() - 0.5),
       speakText: { 
-        en: isMultiply ? `What is ${a} times ${b}?` : `What is ${a} divided by ${b}?`,
-        vi: isMultiply ? `${a} nhân ${b} bằng bao nhiêu?` : `${a} chia ${b} bằng bao nhiêu?`
+        en: isMultiply ? `What is ${a} times ${b}?` : `What is ${a} divided by ${b}?`, 
+        vi: isMultiply ? `${a} nhân ${b} bằng bao nhiêu?` : `${a} chia ${b} bằng bao nhiêu?` 
       }
     }
   }
 
   return (
-    <GameEngine<number> // 3. TELL IT <number>
-      title={{en:'Multiply & Divide', vi:'Nhân & Chia'}} 
-      total={10} 
-      theme="purple" 
-      backRoute="/" 
-      generateQuestion={generateMultiDivQuestion} 
-      getAnswerText={(a) => String(a)} 
-      lang={lang} 
-      speakQuestion={true} 
-    /> 
+    <GameEngine<number>
+      title={{en:'Multiply & Divide', vi:'Nhân & Chia'}}
+      total={10}
+      theme="purple"
+      backRoute="/"
+      generateQuestion={generateMultiDivQuestion}
+      getAnswerText={(a) => String(a)}
+      lang={lang}
+      speakQuestion={true}
+    />
+  )
+}
+
+export default function MultiDivPage(){
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-purple-100" />}>
+      <MultiDivGame />
+    </Suspense>
   )
 }
