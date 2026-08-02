@@ -51,19 +51,26 @@ export default function LanguageEngine<T extends string | number>({
     window.speechSynthesis.onvoiceschanged = loadVoices
   }, [])
 
-  const speak = useCallback((text: string, ttsLang: 'en'|'vi' = lang) => {
-    if (muted ||!('speechSynthesis' in window)) return
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
-    if (ttsLang === 'vi') {
-      utterance.voice = voices.find(v => v.lang === 'vi-VN' && v.name.includes('Google')) || voices.find(v => v.lang === 'vi-VN')
-      utterance.lang = 'vi-VN'; utterance.rate = 0.85; utterance.pitch = 1.1
-    } else {
-      utterance.voice = voices.find(v => v.lang === 'en-US' && v.name.includes('Google')) || voices.find(v => v.lang === 'en-US')
-      utterance.lang = 'en-US'; utterance.rate = 0.95
-    }
-    window.speechSynthesis.speak(utterance)
-  }, [voices, muted, lang])
+const speak = useCallback((text: string, ttsLang: 'en'|'vi' = lang) => {
+  if (muted ||!('speechSynthesis' in window)) return
+  window.speechSynthesis.cancel()
+  const utterance = new SpeechSynthesisUtterance(text)
+  
+  if (ttsLang === 'vi') {
+    const bestVi = voices.find(v => v.lang === 'vi-VN' && v.name.includes('Google'))
+      || voices.find(v => v.lang === 'vi-VN')
+      || null // <-- add this
+    utterance.voice = bestVi
+    utterance.lang = 'vi-VN'; utterance.rate = 0.85; utterance.pitch = 1.1
+  } else {
+    const bestEn = voices.find(v => v.lang === 'en-US' && v.name.includes('Google'))
+      || voices.find(v => v.lang === 'en-US')
+      || null // <-- add this
+    utterance.voice = bestEn
+    utterance.lang = 'en-US'; utterance.rate = 0.95
+  }
+  window.speechSynthesis.speak(utterance)
+}, [voices, muted, lang])
 
   const playSound = useCallback((type: 'correct'|'wrong'|'done') => {
     if (muted) return
