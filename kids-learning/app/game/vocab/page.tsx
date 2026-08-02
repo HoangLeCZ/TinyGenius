@@ -1,9 +1,33 @@
 'use client'
-import { useEffect, useState } from 'react'
-import GameEngine from '@/components/core/GameEngine'
-import { generateVocabQuestion, resetVocab } from '@/components/games/vocab.logic'
-export default function VocabPage(){
-  const [lang, setLang] = useState<'cs'|'en'|'vi'>('cs')
-  useEffect(()=>{ setLang((localStorage.getItem('lang') as any)||'cs'); resetVocab() }, [])
-  return <GameEngine title={{cs:'Slovíčka', en:'Vocabulary', vi:'Từ vựng'}} subtitle={{cs:'Vyber správný obrázek', en:'Pick the right picture', vi:'Chọn hình đúng'}} total={10} theme="purple" backRoute="/" generateQuestion={() => generateVocabQuestion(lang, 'all')} getAnswerText={(a) => String(a)} />
+import { useState, useEffect } from 'react'
+import GameEngine, { GameQuestion } from '@/components/core/GameEngine'
+
+export default function VocabPage() {
+  const [lang, setLang] = useState<'en'|'vi'>('en') // REMOVE cs
+  
+  useEffect(()=>{ 
+    setLang((localStorage.getItem('lang') as 'en'|'vi') || 'en'); // REMOVE cs
+  }, [])
+
+  const generateVocabQuestion = (): GameQuestion<string> => {
+    return {
+      id: crypto.randomUUID(),
+      questionUI: <div className="text-center text-6xl">🐱</div>,
+      answer: "cat",
+      choices: ["cat", "dog", "bird", "fish"],
+      itemName: {en: "cat", vi: "mèo"} // REMOVE cs
+    }
+  }
+
+  return (
+    <GameEngine<string>
+      title={{en:'Vocabulary', vi:'Từ vựng'}} // REMOVE cs
+      total={10}
+      theme="purple"
+      backRoute="/"
+      generateQuestion={generateVocabQuestion}
+      getAnswerText={(a) => String(a)}
+      lang={lang}
+    />
+  )
 }
